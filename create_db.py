@@ -5,25 +5,17 @@ from sqlalchemy.orm import relationship
 engine = create_engine('sqlite:///data/football.db')
 Base = declarative_base()
 
-player_goals_scored = Table('goals_scored', Base.metadata,
+player_match = Table('player_match', Base.metadata,
     Column('player_id', Integer, ForeignKey('player.id')),
     Column('match_id', Integer, ForeignKey('match.id')),
-    Column('goals_scored', Integer))
-
-player_shots_saved = Table('shots_saved', Base.metadata,
-    Column('player_id', Integer, ForeignKey('player.id')),
-    Column('match_id', Integer, ForeignKey('match.id')),
-    Column('shots_saved', Integer))
-
-player_yellow_cards = Table('yellow_cards', Base.metadata,
-    Column('player_id', Integer, ForeignKey('player.id')),
-    Column('match_id', Integer, ForeignKey('match.id')),
-    Column('yellow_cards_count', Integer))
-
-player_red_cards = Table('red_cards', Base.metadata,
-    Column('player_id', Integer, ForeignKey('player.id')),
-    Column('match_id', Integer, ForeignKey('match.id')),
+    Column('goals_scored', Integer),
+    Column('shots_saved', Integer),
+    Column('yellow_cards_count', Integer),
     Column('red_cards_count', Integer))
+
+team_match = Table('team_match', Base.metadata,
+    Column('team_id', Integer, ForeignKey('team.id')),
+    Column('match_id', Integer, ForeignKey('match.id')))
 
 class League(Base):
     __tablename__ = 'league'
@@ -47,8 +39,7 @@ class Team(Base):
     goals_missed = Column(Integer)
     league = relationship('League', back_populates='team')
     player = relationship('Player', back_populates='team')
-    match_team_1 = relationship('Match', back_populates='team_1')
-    match_team_2 = relationship('Match', back_populates='team_2')
+    match_info = relationship('Match', secondary=team_match, back_populates='team_info')
 
 class Player(Base):
     __tablename__ = 'player'
@@ -64,15 +55,13 @@ class Player(Base):
     goals_saves = Column(Integer)
     yellow_cards = Column(Integer)
     red_cards = Column(Integer)
-    match_goals = relationship('Match', secondary=player_goals_scored, back_populates='goals_scored')
-    match_saves = relationship('Match', secondary=player_shots_saved, back_populates='shots_saved')
-    match_yellow_cards = relationship('Match', secondary=player_yellow_cards, back_populates='yellow_cards_count')
-    match_red_cards = relationship('Match', secondary=player_red_cards, back_populates='red_cards_count')
+    match_info = relationship('Match', secondary=player_match, back_populates='player_info')
 
 class Position(Base):
     __tablename__ = 'position'
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    position_name = Column(String)
+    abbrev = Column(String)
     player = relationship('Player', back_populates='position')
 
 class Match(Base):
@@ -85,10 +74,8 @@ class Match(Base):
     team_2_id = Column(Integer, ForeignKey('team.id'))
     team_2 = relationship('Team', back_populates='match_team_2')
     goals_team_2 = Column(Integer)
-    goals_scored = relationship('Player', secondary=player_goals_scored, back_populates='match_goals')
-    shots_saved = relationship('Player', secondary=player_shots_saved, back_populates='match_saves')
-    player_yellow_cards = relationship('Player', secondary=player_yellow_cards, back_populates='match_yellow_cards')
-    player_red_cards = relationship('Player', secondary=player_red_cards, back_populates='match_red_cards')
+    player_info = relationship('Player', secondary=player_match, back_populates='match_info')
+    team_info = relationship('Team', secondary=team_match, back_populates='match_info')
     
 
 if __name__ == '__main__':
